@@ -48,11 +48,11 @@ Il me paraît évident que tout devra soigneusement être documenté dans le cœ
 ```
 Racine
 ├── 📄 start.py
-├── 📁 bot (ou peut-être gunibot, fera changer le namespace)
-│   ├── 📄 __init__.py (permettra de faire `from bot import translate ou qqch du genre`)
+├── 📁 bot (ou peut-être altbot, fera changer le namespace)
+│   ├── 📄 __init__.py (permettra de faire `from bot import translate` et ce genre de choses)
 │   ├── 📄 bot.py
 │   ├── 📄 database.py
-│   ├── 📄 translate.py
+│   ├── 📄 translator.py
 │   └── ...
 ├── 📂configuration (ou 📄 configuration.json mais probablement pas une bonne idée)
 │   ├── 📄 bot.json
@@ -79,6 +79,9 @@ Chaque plugin aura un préfix unique et le nom de chaque table utilisée par ce 
 
 Des aides pourront être implémentées pour permettre au développeur de stocker facilement des objets discord (un salon, un utilisateur) via l'ID directement dans la base de données. Dans le principe, quand le développeur récupère un objet dans la base de données, il pourra utiliser une fonction asynchrone nommée `ensure_objects` qui récupèrera les différents objets depuis Discord.
 
+Idéalement, il faudrait proposer des aides aux développeurs pour stocker et accéder facilement à des informations concernant un objet discord comme un utilisateur ou un salon discord.
+Je ne suis pas sûr que l'on puisse modifier les objets nextcord de manière propre mais on pourrait essayer d'ajouter un argument permettant d'accéder à un ORM lié à l'utilisateur en fonction des plugins.
+
 ### Traductions
 
 Le module de traduction sera disponible en l'important : `from bot import translator`.
@@ -96,3 +99,4 @@ Une API permettra aux plugins de déclarer des fonctions pour savoir quelle lang
 Ces fonctions seront aussi disponibles directement depuis le module bot grâce au `__init__.py` (par exemple `from bot import translate, random_translate` ou `bot.translate(...)`).
 
 Pour éviter les conflits, les traductions de chaque plugins seront contenues dans un namespace, de la même manière que les tables dans la base de données.
+Cependant, il serait intéressant de permettre aux plugins d'écraser ou d'ajouter des langues à d'autres plugins sans avoir à les modifier, pour par exemple faire un plugin fun qui change certaines traductions, ou un plugin allemand qui rajoute des traductions à certains plugins (sans avoir à faire une pull request sur le code du plugin traduit).
