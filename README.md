@@ -82,6 +82,11 @@ Des aides pourront être implémentées pour permettre au développeur de stocke
 Idéalement, il faudrait proposer des aides aux développeurs pour stocker et accéder facilement à des informations concernant un objet discord comme un utilisateur ou un salon discord.
 Je ne suis pas sûr que l'on puisse modifier les objets nextcord de manière propre mais on pourrait essayer d'ajouter un argument permettant d'accéder à un ORM lié à l'utilisateur en fonction des plugins.
 
+Il sera possible pour les plugins d'inscrire leurs tables auprès du bot.
+
+Il faudra trouver un moyen de proposer un développeur un outil de migration de base de données automatique en cas de mise à jour de version.
+Soit cette fonctionnalité sera implémentée au démarrage du bot, soit un utilitaire sera fournit pour installer et mettre à jour des plugins qui s'en chargera.
+
 ### Traductions
 
 Le module de traduction sera disponible en l'important : `from bot import translator`.
@@ -90,9 +95,6 @@ Il y aura différentes fonctionnalités disponibles pour le développeur :
 * `translator.translate` qui prendra en argument la clé de la traduction et permettra de formatter avec des arguments directement. Dans l'idéal, cette fonction n'est pas asynchrone, et peut prendre en argument un objet de contexte ou une interaction, et prendra en compte la langue selon les paramètres du bot (support de la localisation de l'utilisateur, des paramètres du serveur...).
 * `translator.command_translate` qui aidera les développeurs avec le nouveau système de traduction des commandes de discord. L'idée est qu'il y a juste la clé de la traduction à donner et il retourne le dictionnaire des traductions avec en clé l'identifiant de la langue et en valeur la traduction. Le support du formatage ne sera probablement pas nécessaire ici, mais il faudra l'implémenter au cas où (par exemple si besoin du nom du bot ou quelque chose comme ça).
 * `translator.random_translate` qui pourra être utile pour le développeur dans le cas d'un message aléatoire (par exemple le message de ban aléatoire de Gipsy Beta sur Gunivers), en choisissant une des traductions disponibles dans la langue cible. Éventuellement, cette fonctionnalité peut-être implémentée directement dans `translator.translate`, ce qui permettrais de modifier le bot pour n'avoir que des traductions avec plusieurs possibilités... ça pourrait être marrant. 
-
-Peut-être :
-* `translator.message_translate` qui permettra de stocker les arguments de création d'un message directement dans un fichier yaml. L'idée est de pouvoir faire quelque chose dans le genre de `await inter.send(**translator.message_translate("economy.failed", user=inter.user))`. Cela permettrais de faire une interface et un look très dynamique, mais ceci est au coût de ma clarté dans les fichiers de traductions. Dans l'idéal, le système s'adapterait au type de traduction proposé, en interprétant une chaîne de caractère simple en tant que contenu de message, mais en pouvant comprendre le contenu riche d'un embed. Éventuellement, on pourrait avoir des messages à formatter par défaut permettant une mise en forme consistante sur tout le bot et un thémage plus facile.
 
 Une API permettra aux plugins de déclarer des fonctions pour savoir quelle langue afficher en fonction du contexte (si par exemple un plugin veut développer un système de langue avancé), ou ajouter des étapes au formatage pour par exemple changer la couleur des embeds, retirer la mise en forme... Dans cet ordre d'idée, on pourrait avoir la possibilité de créer de plugins de "thème", surtout si la fonctionnalité de traduction de message est disponible.
 
@@ -157,10 +159,56 @@ Pour récupérer les valeurs d'une configuration, on pourra faire :
 ```py
 if bot.get_configuration("allow_ban", user):
   await user.kick()
+# ou, pour un accès depuis un plugin externe
+if bot.get_configuration("gunivers.allow_ban", user):
+  await user.kick()
 # ou
 if bot.get_configuration(self.allow_ban_configuration, user):
   await user.kick()
 # ou
 if self.allow_ban_configuration.get(user):
   await user.kick()
+```
+
+Il faudra créer des fonctions permettant de récupérer des listes de configuration en fonction des plugins, pour permettre la création d'un outil de configuration.
+
+### Application commands
+
+Les commandes d'applications sont pratiques et efficaces, seulement elles ont le désavantages d'être relativement compliquées à implémenter dans un bot.
+
+Pour palier à cet inconvénient, il faudra proposer des utilitaires pour simplifier la création de commandes, sous commandes, et commandes spécifiques à certains serveurs.
+
+### Templates de messages
+
+Les templates seront des messages préfabriqués pouvant contenir tout ce qui décrit un message discord : un contenu, des embeds, des fichiers... Avec la possibilité de mettre en forme le message.
+L'intérêt de cette technique est de proposer une manière de changer l'apparence des commandes sans devoir changer le code, savoir où vont les embeds, etc...
+
+Voici un exemple de ce qu'il sera possible de faire avec les templates :
+`ban_info.json`
+```json
+{
+  "content": "{user.mention}, voici le fonctionnement des bans ici :",
+  "embeds": [
+    {
+      "title": "Un banissement pour tous",
+      "description": "Sur gunivers, nous croyons fermement que la communauté est le moteur de tout.\nDans cet ordre d'idée, nous avons mis aux mains des membres le plus actif le plus grand pouvoir et le plus grand argument : le BAN.",
+      "color": null,
+      "fields": [
+        {
+          "name": "Quelques stats",
+          "value": "Jusque maintenant, {stats.bans_count} personnes ont été bannies de Gunivers par la communauté.\nIl y a {stats.common_banners} banners régulier et {stats.all_banners} personne ont déjà bannis quelqu'un une fois dans leur vie."
+        },
+        {
+          "name": "Leaderboard",
+          "value": "{\"\\n\".join([f\"**{i}** : {user.mention}\" for i, user in enumerate(sorted(stats.banners, key=lambda user: user.bans)[:10]]))}"
+        }
+      ]
+    }
+  ],
+  "attachments": []
+}
+```
+Et dans le code du bot :
+```py
+await interaction.send(**template.load("ban_info", user=user, stats=self.get_stats()))
 ```
