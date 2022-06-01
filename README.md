@@ -98,5 +98,69 @@ Une API permettra aux plugins de déclarer des fonctions pour savoir quelle lang
 
 Ces fonctions seront aussi disponibles directement depuis le module bot grâce au `__init__.py` (par exemple `from bot import translate, random_translate` ou `bot.translate(...)`).
 
+Si possible, il pourrait être intéressant d'implémenter un objet décrivant juste une traduction sans donner sa valeur qui puisse être mis directement dans le message et formaté par la librairie au moment de l'envois du message (il serait possible de surcharger les méthodes `send`, mais le problème est qu'il y en a un certain nombre dans nextcord), ce qui pourrait aussi permettre un meilleur support des messages contenus dans les traductions. On pourrait par exemple faire quelque chose qui ressemblerait à ça :
+```py
+await inter.send(translator.translation("misc.welcom", user=user))
+```
+Mais aussi, ce qui permettrait un support avec les APIs qui interconnectent les plugins entre, en prenant un exemple de configuration :
+```py
+bot.register_configuration(
+  Configuration(
+    name=translator.translation("misc.config.cookie.name"),
+    description=translator.translation("misc.config.cookie.description"),
+  )
+)
+```
+Cela permettrait d'utiliser les traduction partout sans avoir à implémenter quelque chose comme un argument `translation_key` pour chaque fonctionnalité.
+
 Pour éviter les conflits, les traductions de chaque plugins seront contenues dans un namespace, de la même manière que les tables dans la base de données.
 Cependant, il serait intéressant de permettre aux plugins d'écraser ou d'ajouter des langues à d'autres plugins sans avoir à les modifier, pour par exemple faire un plugin fun qui change certaines traductions, ou un plugin allemand qui rajoute des traductions à certains plugins (sans avoir à faire une pull request sur le code du plugin traduit).
+
+### Configuration
+
+Le bot devra proposer une API facile d'utilisation pour gérer des configurations en fonction des serveurs, des salons, des utilisateurs...
+
+L'idée est de ne pas implémenter une interface de configuration pour l'utilisateur discord mais de proposer une API pour enregistrer des configuration sous forme d'un objet python avec un nom, une description, un type, une valeur par défaut, un validateur synchrone et un autre asynchrone (si besoin), permettant de retourner un message d'erreur.
+
+L'idée est que n'importe qui puisse créer un plugin pour configurer un serveur ou un utilisateur. De l'autre côté, cela permet de faire fonctionner les plugins quelque soit le plugin qui implémente l'interface du côté de l'utilisateur.
+
+Au niveau des plugins "clients" du système de configuration, une configuration pourrait se déclarer de cette manière :
+```py
+def user_on_gunivers():
+  pass # on va dire que cette fonction vérifie que l'utilisateur est sur les serveurs de Gunivers
+
+bot.register_config(
+  Configuration(
+    id="allow_ban",
+    name="Allow ban",
+    description="Allow other active user to \"ban\" you from the Gunivers server",
+    type=bool,
+    target=nextcord.Member,
+    default=True,
+    available=user_on_gunivers,
+  )
+)
+```
+
+Chaque configuration sera enregistrée avec la forme `<plugin_namespace>.<config_name>` (avec le nom du plugin pour éviter les problèmes de compatibilité entre les différents plugins).
+
+Au niveau de la base de données, la table de configuration pourrait ressembler à quelque chose de ce genre :
+```
+PRIMARY KEY id -> l'identifiant de la configuration (par exemple `gunivers.allow_ban`)
+PRIMARY KEY target -> l'identifiant de la cible (un utilisateur, un serveur, un salon textuel...)
+value -> la valeur de la configuration (un nombre, un booléen, un ID, une chaîne de caractère, du JSON...)
+```
+Le deux clés primaires permettraient d'éviter des conflits.
+Éventuellement, il sera peut-être plus pratique d'utiliser plusieurs colonnes en fonction du type de la configuration, en ajoutant une colonne type.
+
+Pour récupérer les valeurs d'une configuration, on pourra faire :
+```py
+if bot.get_configuration("allow_ban", user):
+  await user.kick()
+# ou
+if bot.get_configuration(self.allow_ban_configuration, user):
+  await user.kick()
+# ou
+if self.allow_ban_configuration.get(user):
+  await user.kick()
+```
