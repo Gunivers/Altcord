@@ -1,27 +1,31 @@
 # Altcord
 
-Gipsy V2 (de son nouveau nom Altcord) est un utilitaire pour les développeurs permettant de créer facilement des bots discord au fonctionnalités poussées.
-Un framework quoi.
+Altcord est une framework permettant le création aisée de bot cross-platform.
+L'idée est de fournir une API qui sera compatible avec certaines plateformes comme discord, mais aussi minecraft ou Telegram.
 
-Il sera basé sur nextcord.
+Ce fonctionnement permettra de créer des bot pour tout les publics sans avoir à recoder entièrement les fonctionnalités.
 
-## La structure générale du projet
+La couche d'abstraction des différentes APIs sera fournie par l'API entièrement customisée de Altcord.
 
-Le projet sera constitué de deux parties, indépendantes l'une de l'autre : le cœur (core) et les plugins.
+Pour créer un bot, il faudra ajouter des plugins au cœur. Les plugins pourront spécifier une API en fonction de la plateforme (par exemple pour modifier un salon) et pourrons utiliser des traductions, avoir un accès facilité à la base de données, utiliser des paramètres en fonction du contexte (utilisateur, salon, serveur...).
 
-Le cœur sera la partie principale du projet. Ce sera lui qui fera office d'interface entre les plugins et le reste des interfaces, comme discord, la base de données, les traductions… Altcord est le cœur, et des plugins pourront être greffés sur ce cœur.
+## Structure du projet
+
+Le projet sera constitué de deux parties, le cœur (core), et indépendamment les plugins.
+
+Le cœur sera la partie principale du projet. Ce sera lui qui fera office d'interface entre les plugins et les plateformes comme Discord, minecraft, mais aussi les composants internes du bot comme la base de données, les traductions… Altcord est le cœur, et des plugins pourront être greffés sur ce cœur.
 
 Les plugins seront des dossiers contenant les fonctionnalités qui seront visibles par l'utilisateur, comme par exemple une commande de ban, un plugin d'économie ou même la gestion de erreurs.
 
 ### Ce qui fera partie du cœur :
+- le support des plateformes (discord, minecraft)
 - la gestion de la base de données
 - la gestion des plugins (ajouter, retirer, désactiver)
-- la gestion interne des messages d'erreur, des logs
-- une interface plus aisée avec les diverses fonctionnalités de discord comme les commandes slash et les différents messages, webhooks...
+- un système de traductions
 
 ### Ce qui fera **peut-être** partie du cœur
 - une api pour proposer des dépendances faciles entre les plugins
-- une api pour générer une interface web de contrôle
+- une api pour générer une interface web de contrôle (peut poser des problèmes avec le système multi-plateformes)
 - etc...
 
 ### Ce qui fera partie des plugins (et définitivement pas du cœur)
@@ -30,101 +34,99 @@ Les plugins seront des dossiers contenant les fonctionnalités qui seront visibl
   - une commande de ban
   - un gestionnaire de rôle
   - un trou de vers (wormhole dans le jargon)
-  - l'affichage au niveau de discord des messages d'erreur
   - les commandes d'aide
+  - des rappels
+  - et pleins de fonctionnalités du genre
 
-Dans un univers parfait, il n'y a pas de plugins par défaut dans Altcord, ce qui fera que le bot sera inutilisable tel quel.
-Les plugins seront le plus indépendants possible pour permettre des installations customisées.
+Il n'y aura pas de plugins par défaut dans Altcord, et le bot brut ne fera rien. Il faudra ajouter des plugins pour avoir des fonctionnalités.
 
-La modularité est l'objectif du projet.
-
-## Dans la pratique
-
-Dans la pratique, ces idées devront s'implémenter de la manière la plus propre et maintenable possible.
-
-Il me paraît évident que tout devra soigneusement être documenté dans le cœur, non seulement pour permettre une meilleurs compréhension du projet mais aussi pour permettre l'utilisation d'IA comme Copilot et de les entraîner avec le commentaires.
+Le cœur sera soigneusement documenté, pour pouvoir facilement le maintenir et pour permettre l'utilisation d'IAs comme Copilot.
 
 ### La structure des fichiers
 ```
-Racine
-├── 📄 start.py
-├── 📁 bot (ou peut-être altbot, fera changer le namespace)
-│   ├── 📄 __init__.py (permettra de faire `from bot import translate` et ce genre de choses)
-│   ├── 📄 bot.py
-│   ├── 📄 database.py
-│   ├── 📄 translator.py
-│   └── ...
-├── 📂configuration (ou 📄 configuration.json mais probablement pas une bonne idée)
-│   ├── 📄 bot.json
-│   ├── 📄 levels.json
-│   ├── 📄 twitter.json
-│   └── ...
-├── 📁 plugins
-│   ├── 📂 ban
-│   │   ├── 📄 plugin.py
-│   │   ├── 📁 translations
-│   │   │   ├── 📄 fr.yaml
-│   │   │   └── 📄 en.yaml
-│   │   └── ...
-│   └── ...
-└── ...
+📁 /
+├─ 📄 start.py
+├─ 📁 api
+├─ 📁 config
+├─ 📁 data # peut-être à supprimer en faveur d'uniquement l'utilisation de la base de données
+├─ 📁 platforms
+│  ├─ 📁 discord
+│  ├─ 📁 telegram
+│  ├─ 📁 minecraft
+│  └─ 📁 ...
+├─ 📁 docs
+├─ 📁 langs
+├─ 📁 logs
+├─ 📁 plugins
+│  └─ 📁 <plugin name>
+│     ├─ 📄 main.py # ou plugin.py, entrypoint.py ? pas vraiment le fichier principal du projet
+│     ├─ 📁 api
+│     ├─ 📁 data # toujours nécessaire ? (si utilisation de sqlalchemy)
+│     ├─ 📁 platforms
+│     │  ├─ 📁 discord
+│     │  ├─ 📁 telegram
+│     │  ├─ 📁 minecraft
+│     │  └─ 📁 ...
+│     ├─ 📁 docs
+│     ├─ 📁 langs
+│     ├─ 📁 utils
+│     └─ 📁 web # peut-être le mettre dans platforms ? ou un support avec un système de configuration ?
+├─ 📁 utils
+└─ 📁 web # peut-être le mettre dans platforms ?
 ```
+
+### Le plugin
+
+Chaque plugin aura un ID unique (plus ou moins) qui permettra d'éviter les collisions entre les différents plugins.
+
+Chaque plugin pourra indiquer quels sont les plateformes qu'il supporte, par exemple un plugin de gestion de rôle n'aurait pas de sens sur minecraft.
+
+### Les utilisateurs
+
+Au vue du système multi-plateforme, il faudra fournir un moyen de relier plusieurs comptes à un seul utilisateurs.
+
+Cet utilisateur aura un identifiant interne au bot et ce sera cet identifiant qui sera utilisé, pas un identifiant d'une tierce partie comme discord ou l'UUID de minecraft.
+Ce comportement permettra d'utiliser un compte et dans le cas d'un changement de compte de spécifier le nouveau compte ou encore d'utiliser un compte discord avec les même données que un compte Telegram.
 
 ### Base de données
 
-La base de données sera gérée avec le module python sqlalchemy pour l'utilisation d'un ORM.
+La base de données sera gérée par le module python `sqlalchemy` qui permettra d'utiliser facilement n'importe quel type de base de données SQL (sqlite3, MariaDB, MySQL...) sans se prendre la tête.
 
+Ça permettra notamment de fournir des utilitaires pour gérer plus facilement les utilisateurs et différentes fonctionnalités.
 
-Chaque plugin aura un préfix unique et le nom de chaque table utilisée par ce plugin commencera par ce préfix. Cela permettra d'éviter les conflits entre les plugins si ils utilisent différentes tables avec le même nom.
+Chaque table de plugin devra avoir son id en début de table (par ex `ban_users`), pour éviter des problèmes si plusieurs plugins utilisent un table avec le même nom.
 
-Des aides pourront être implémentées pour permettre au développeur de stocker facilement des objets discord (un salon, un utilisateur) via l'ID directement dans la base de données. Dans le principe, quand le développeur récupère un objet dans la base de données, il pourra utiliser une fonction asynchrone nommée `ensure_objects` qui récupèrera les différents objets depuis Discord.
+Au chargement d'un plugin, une fonction sera appelée où le bot pourra inscrire sa table.
 
-Idéalement, il faudrait proposer des aides aux développeurs pour stocker et accéder facilement à des informations concernant un objet discord comme un utilisateur ou un salon discord.
-Je ne suis pas sûr que l'on puisse modifier les objets nextcord de manière propre mais on pourrait essayer d'ajouter un argument permettant d'accéder à un ORM lié à l'utilisateur en fonction des plugins.
+Pour les mises à jour de format de tables, il y a deux possibilités :
+1. le plugin met à jour tout seul la table au chargement du plugin
+2. une commande permettra d'installer le plugin et de mettre à jour la table (par exemple `python altcord.py plugin update ban`)
 
-Il sera possible pour les plugins d'inscrire leurs tables auprès du bot.
+### Commandes
 
-Il faudra trouver un moyen de proposer un développeur un outil de migration de base de données automatique en cas de mise à jour de version.
-Soit cette fonctionnalité sera implémentée au démarrage du bot, soit un utilitaire sera fournit pour installer et mettre à jour des plugins qui s'en chargera.
+Les commandes seront gérées par Altcord qui fera la traduction en commandes Discord, Telegram, Minecraft.
+
+Il faudra permettre un support avancé de toutes les fonctionnalités des différentes plateformes tout en évitant de rendre une plateforme spécifique inutilisable.
+
+Par exemple, les commandes de Discord supportent les arguments, ce qui n'est pas le cas des commandes Telegram. La librairie devra gérer la traduction entre les différentes possibilités de mise en forme.
 
 ### Traductions
 
-Le module de traduction sera disponible en l'important : `from bot import translator`.
+Comme par défaut le moyen d'envoyer un message en réponse à une interaction (une commande, un appuis sur un bouton, un message reçu) sera géré par la librairie, on pourra intégrer un système de traduction très profond.
 
-Il y aura différentes fonctionnalités disponibles pour le développeur :
-* `translator.translate` qui prendra en argument la clé de la traduction et permettra de formatter avec des arguments directement. Dans l'idéal, cette fonction n'est pas asynchrone, et peut prendre en argument un objet de contexte ou une interaction, et prendra en compte la langue selon les paramètres du bot (support de la localisation de l'utilisateur, des paramètres du serveur...).
-* `translator.command_translate` qui aidera les développeurs avec le nouveau système de traduction des commandes de discord. L'idée est qu'il y a juste la clé de la traduction à donner et il retourne le dictionnaire des traductions avec en clé l'identifiant de la langue et en valeur la traduction. Le support du formatage ne sera probablement pas nécessaire ici, mais il faudra l'implémenter au cas où (par exemple si besoin du nom du bot ou quelque chose comme ça).
-* `translator.random_translate` qui pourra être utile pour le développeur dans le cas d'un message aléatoire (par exemple le message de ban aléatoire de Gipsy Beta sur Gunivers), en choisissant une des traductions disponibles dans la langue cible. Éventuellement, cette fonctionnalité peut-être implémentée directement dans `translator.translate`, ce qui permettrais de modifier le bot pour n'avoir que des traductions avec plusieurs possibilités... ça pourrait être marrant. 
+Par exemple, on pourra juste donner la clé d'une traduction à l'envois d'un message et l'objet contexte vérifiera lui même la langue avant d'envoyer le message.
 
-Une API permettra aux plugins de déclarer des fonctions pour savoir quelle langue afficher en fonction du contexte (si par exemple un plugin veut développer un système de langue avancé), ou ajouter des étapes au formatage pour par exemple changer la couleur des embeds, retirer la mise en forme... Dans cet ordre d'idée, on pourrait avoir la possibilité de créer de plugins de "thème", surtout si la fonctionnalité de traduction de message est disponible.
+Les traductions seront stockées dans des fichiers YAML dans le dossier de chaque plugin avec quelques traductions par défaut (le nom du bot, des messages communs comme `Valider`, `Annuler`...).
 
-Ces fonctions seront aussi disponibles directement depuis le module bot grâce au `__init__.py` (par exemple `from bot import translate, random_translate` ou `bot.translate(...)`).
-
-Si possible, il pourrait être intéressant d'implémenter un objet décrivant juste une traduction sans donner sa valeur qui puisse être mis directement dans le message et formaté par la librairie au moment de l'envois du message (il serait possible de surcharger les méthodes `send`, mais le problème est qu'il y en a un certain nombre dans nextcord), ce qui pourrait aussi permettre un meilleur support des messages contenus dans les traductions. On pourrait par exemple faire quelque chose qui ressemblerait à ça :
-```py
-await inter.send(translator.translation("misc.welcom", user=user))
-```
-Mais aussi, ce qui permettrait un support avec les APIs qui interconnectent les plugins entre, en prenant un exemple de configuration :
-```py
-bot.register_configuration(
-  Configuration(
-    name=translator.translation("misc.config.cookie.name"),
-    description=translator.translation("misc.config.cookie.description"),
-  )
-)
-```
-Cela permettrait d'utiliser les traduction partout sans avoir à implémenter quelque chose comme un argument `translation_key` pour chaque fonctionnalité.
-
-Pour éviter les conflits, les traductions de chaque plugins seront contenues dans un namespace, de la même manière que les tables dans la base de données.
-Cependant, il serait intéressant de permettre aux plugins d'écraser ou d'ajouter des langues à d'autres plugins sans avoir à les modifier, pour par exemple faire un plugin fun qui change certaines traductions, ou un plugin allemand qui rajoute des traductions à certains plugins (sans avoir à faire une pull request sur le code du plugin traduit).
+Les traductions pourront aussi être intégrées au système de commandes de manière profonde en fonction de la plateforme.
 
 ### Configuration
 
 Le bot devra proposer une API facile d'utilisation pour gérer des configurations en fonction des serveurs, des salons, des utilisateurs...
 
-L'idée est de ne pas implémenter une interface de configuration pour l'utilisateur discord mais de proposer une API pour enregistrer des configuration sous forme d'un objet python avec un nom, une description, un type, une valeur par défaut, un validateur synchrone et un autre asynchrone (si besoin), permettant de retourner un message d'erreur.
+L'idée est de ne pas implémenter une interface de configuration pour l'utilisateur final mais de proposer une API pour enregistrer des configuration sous forme d'un objet python avec un nom, une description, un type, une valeur par défaut, un validateur synchrone et un autre asynchrone (si besoin), permettant de retourner un message d'erreur.
 
-L'idée est que n'importe qui puisse créer un plugin pour configurer un serveur ou un utilisateur. De l'autre côté, cela permet de faire fonctionner les plugins quelque soit le plugin qui implémente l'interface du côté de l'utilisateur.
+Ces configurations seront modifiables par l'utilisateur final via l'utilisation d'un plugin qui implémentera les modifications de ces variables, comme par exemple une interface web.
 
 Au niveau des plugins "clients" du système de configuration, une configuration pourrait se déclarer de cette manière :
 ```py
@@ -155,60 +157,10 @@ value -> la valeur de la configuration (un nombre, un booléen, un ID, une chaî
 Le deux clés primaires permettraient d'éviter des conflits.
 Éventuellement, il sera peut-être plus pratique d'utiliser plusieurs colonnes en fonction du type de la configuration, en ajoutant une colonne type.
 
-Pour récupérer les valeurs d'une configuration, on pourra faire :
+Puisque les objets donnés par les évènements seront normalisés, on pourra faire par exemple :
 ```py
-if bot.get_configuration("allow_ban", user):
-  await user.kick()
-# ou, pour un accès depuis un plugin externe
-if bot.get_configuration("gunivers.allow_ban", user):
-  await user.kick()
-# ou
-if bot.get_configuration(self.allow_ban_configuration, user):
-  await user.kick()
-# ou
-if self.allow_ban_configuration.get(user):
-  await user.kick()
+if ctx.user.config['ban.allow_ban']:
+    await ctx.user.discord_user.ban()
 ```
 
 Il faudra créer des fonctions permettant de récupérer des listes de configuration en fonction des plugins, pour permettre la création d'un outil de configuration.
-
-### Application commands
-
-Les commandes d'applications sont pratiques et efficaces, seulement elles ont le désavantages d'être relativement compliquées à implémenter dans un bot.
-
-Pour palier à cet inconvénient, il faudra proposer des utilitaires pour simplifier la création de commandes, sous commandes, et commandes spécifiques à certains serveurs.
-
-### Templates de messages
-
-Les templates seront des messages préfabriqués pouvant contenir tout ce qui décrit un message discord : un contenu, des embeds, des fichiers... Avec la possibilité de mettre en forme le message.
-L'intérêt de cette technique est de proposer une manière de changer l'apparence des commandes sans devoir changer le code, savoir où vont les embeds, etc...
-
-Voici un exemple de ce qu'il sera possible de faire avec les templates :
-`ban_info.json`
-```json
-{
-  "content": "{user.mention}, voici le fonctionnement des bans ici :",
-  "embeds": [
-    {
-      "title": "Un banissement pour tous",
-      "description": "Sur gunivers, nous croyons fermement que la communauté est le moteur de tout.\nDans cet ordre d'idée, nous avons mis aux mains des membres le plus actif le plus grand pouvoir et le plus grand argument : le BAN.",
-      "color": null,
-      "fields": [
-        {
-          "name": "Quelques stats",
-          "value": "Jusque maintenant, {stats.bans_count} personnes ont été bannies de Gunivers par la communauté.\nIl y a {stats.common_banners} banners régulier et {stats.all_banners} personne ont déjà bannis quelqu'un une fois dans leur vie."
-        },
-        {
-          "name": "Leaderboard",
-          "value": "{\"\\n\".join([f\"**{i}** : {user.mention}\" for i, user in enumerate(sorted(stats.banners, key=lambda user: user.bans)[:10]]))}"
-        }
-      ]
-    }
-  ],
-  "attachments": []
-}
-```
-Et dans le code du bot :
-```py
-await interaction.send(**template.load("ban_info", user=user, stats=self.get_stats()))
-```
