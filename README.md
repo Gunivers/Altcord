@@ -9,6 +9,20 @@ La couche d'abstraction des différentes APIs sera fournie par l'API entièremen
 
 Pour créer un bot, il faudra ajouter des plugins au cœur. Les plugins pourront spécifier une API en fonction de la plateforme (par exemple pour modifier un salon) et pourrons utiliser des traductions, avoir un accès facilité à la base de données, utiliser des paramètres en fonction du contexte (utilisateur, salon, serveur...).
 
+Table des matières
+- [Altcord](#altcord)
+  - [Structure du projet](#structure-du-projet)
+    - [Ce qui fera partie du cœur :](#ce-qui-fera-partie-du-cœur-)
+    - [Ce qui fera **peut-être** partie du cœur](#ce-qui-fera-peut-être-partie-du-cœur)
+    - [Ce qui fera partie des plugins (et définitivement pas du cœur)](#ce-qui-fera-partie-des-plugins-et-définitivement-pas-du-cœur)
+    - [La structure des fichiers](#la-structure-des-fichiers)
+    - [Le plugin](#le-plugin)
+    - [Les utilisateurs](#les-utilisateurs)
+    - [Base de données](#base-de-données)
+    - [Commandes](#commandes)
+    - [Traductions](#traductions)
+    - [Configuration](#configuration)
+
 ## Structure du projet
 
 Le projet sera constitué de deux parties, le cœur (core), et indépendamment les plugins.
